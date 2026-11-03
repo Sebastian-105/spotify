@@ -1,0 +1,409 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Spotify Listening Record By Sebastian Schapfel</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="./assets/style.css" class="href">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+
+</head>
+
+<body>
+  <div class="page">
+    <div class="topbar">
+      <div class="brand">
+        <div class="eyebrow">Listening Record</div>
+
+        <h1>How Much You've Listened</h1>
+        <hr />
+        <h2>By Sebastian Schapfel</h2>
+        <hr />
+        <p class="subhead">
+          Upload your Spotify data export for exact minutes, or connect live
+          for a quick ranked snapshot.
+        </p>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="palette-picker" id="palettePicker" role="group" aria-label="Colour theme"></div>
+
+        <button class="theme-toggle" id="themeToggle">
+          <span class="dot"></span><span id="themeLabel">Dark</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="modes">
+      <button class="mode-btn active" data-mode="explanation">
+        Explanation
+      </button>
+      <button class="mode-btn" data-mode="upload">Upload My Data</button>
+
+      <button class="mode-btn" data-mode="live">Connect Live</button>
+    </div>
+    <hr style="
+          margin: 20px 0;
+          height: 5px;
+          background: var(--ink);
+          border-radius: 5px;
+        " />
+
+    <div class="layout explanation-mode">
+      <div class="sidebar">
+        <div class="card">
+          <!-- UPLOAD MODE -->
+
+          <div class="panel active" id="panel-upload">
+            <div class="error" id="uploadError"></div>
+
+            <div class="dropzone" id="dropzone">
+              <p>
+                <strong>Drop your files here</strong><br />or tap to choose —
+                accepts the .zip from Spotify, or the individual
+                "Streaming_History_Audio" .json files
+              </p>
+            </div>
+
+            <input type="file" id="fileInput" multiple accept=".json,.zip" />
+
+            <p class="privacy-note">
+              Everything is parsed right here in your browser. Your files are
+              never uploaded anywhere.
+            </p>
+
+            <div class="progress" id="uploadProgress">Reading files…</div>
+          </div>
+
+          <!-- LIVE MODE -->
+
+          <div class="panel" id="panel-live">
+            <div class="error" id="liveError"></div>
+
+            <button class="primary" id="connectBtn">
+              Connect to Spotify
+            </button>
+
+            <p class="note" style="margin-top: 15px">
+              Note: as of Feb 2026, Spotify removed popularity and genre data
+              from apps at this access tier — only rank order is available
+              live. For exact minutes, use the upload option.
+            </p>
+          </div>
+        </div>
+
+        <div class="card" id="statCard" style="display: none">
+          <div class="stamp" id="stamp">Range: —</div>
+
+          <div class="bigstat" id="bigstat">
+            <div class="num" id="bigstatNum" style="cursor: help" title="Total listening time"></div>
+
+            <div class="lbl">time listened</div>
+
+            <div class="sub" id="bigstatSub"></div>
+          </div>
+
+          <!-- UPLOAD MODE: date range presets + custom range -->
+
+          <div class="controls" id="uploadControls">
+            <div class="row">
+              <button class="tab preset-tab" data-preset="4w">4 Weeks</button>
+
+              <button class="tab preset-tab" data-preset="3m">
+                3 Months
+              </button>
+
+              <button class="tab preset-tab" data-preset="6m">
+                6 Months
+              </button>
+            </div>
+
+            <div class="row">
+              <button class="tab preset-tab" data-preset="1y">1 Year</button>
+
+              <button class="tab preset-tab active" data-preset="all">
+                All Time
+              </button>
+            </div>
+
+            <div class="date-row">
+              <input type="date" id="dateFrom" />
+
+              <span class="date-sep">–</span>
+
+              <input type="date" id="dateTo" />
+            </div>
+
+            <div class="date-row">
+              <button class="apply-btn" id="applyDateBtn">
+                Apply Custom Range
+              </button>
+            </div>
+          </div>
+
+          <div class="search-wrap" id="searchWrap">
+            <label for="artistSearch">Search an artist</label>
+
+            <input type="text" id="artistSearch" placeholder="type an artist name" autocomplete="off" />
+
+            <div class="search-result" id="searchResult"></div>
+          </div>
+
+          <div class="controls" id="controls">
+            <div class="row">
+              <button class="tab type-tab active" data-type="artists">
+                Artists
+              </button>
+
+              <button class="tab type-tab" data-type="tracks">Tracks</button>
+            </div>
+
+            <div class="row">
+              <button class="tab range-tab active" data-range="short_term">
+                4 Weeks
+              </button>
+
+              <button class="tab range-tab" data-range="medium_term">
+                6 Months
+              </button>
+
+              <button class="tab range-tab" data-range="long_term">
+                All Time
+              </button>
+            </div>
+          </div>
+
+          <div class="foot-row">
+            <p class="note" id="footNote"></p>
+
+            <button class="disconnect" id="disconnectBtn">Disconnect</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="explanation-panel active" id="explanationPanel">
+        <div class="explanation-card">
+          <h2>Get your Spotify listening data</h2>
+          <p>
+            To see your actual listening time — including your most-listened
+            month, day, and week — request Spotify's
+            <strong>Extended Streaming History</strong>. The regular
+            account-data download only includes about the past year; Extended
+            Streaming History covers the lifetime of your account.
+          </p>
+
+          <h3 style="font-size: 1.25rem">01 / Request your data</h3>
+          <ol>
+            <li>
+              Open
+              <a href="https://www.spotify.com/account/privacy/" target="_blank" rel="noopener noreferrer">Spotify's
+                Account Privacy page</a>
+              in a browser and sign in.
+            </li>
+            <li>Find the <strong>Download your data</strong> section.</li>
+            <li>
+              Select <strong>Extended streaming history</strong>. You do not
+              need the regular Account data package for this tracker.
+            </li>
+            <li>
+              Press <strong>Request data</strong>. If Spotify asks you to
+              confirm by email, follow the confirmation link.
+            </li>
+          </ol>
+
+          <h3 style="font-size: 1.25rem">02 / Download the export</h3>
+          <ol>
+            <li>
+              Wait for Spotify's email saying your data is ready. Spotify says
+              preparing a data copy can take up to 30 days.
+            </li>
+            <li>
+              Use the link in the email to download the ZIP file to your
+              device.
+            </li>
+            <li>
+              Keep the ZIP file intact — you can upload it directly here. You
+              can also extract it and select the individual
+              <strong>Streaming_History_Audio</strong> JSON files.
+            </li>
+          </ol>
+
+          <h3 style="font-size: 1.25rem">03 / Import it into this tracker</h3>
+          <ol>
+            <li>Return to the <strong>Upload My Data</strong> tab.</li>
+            <li>
+              Drop the Spotify ZIP file into the upload area, or click the
+              area and choose the ZIP. If you extracted the download, select
+              all of the <strong>Streaming_History_Audio</strong> JSON files.
+            </li>
+            <li>
+              After processing, choose <strong>All Time</strong> or set a
+              custom date range.
+            </li>
+            <li>
+              Open <strong>Listening Patterns</strong> above your results to
+              see your busiest month, day, and week in that date range.
+            </li>
+          </ol>
+
+          <div class="explanation-callout">
+            <p>
+              <strong>Privacy:</strong> This tracker reads and processes the
+              files in your browser. The export is not sent to a server by
+              this page. Your Spotify download contains personal listening
+              information, so keep the ZIP somewhere private and only upload
+              it to services you trust.
+            </p>
+          </div>
+
+          <h3 style="font-size: 1.25rem">What should I upload?</h3>
+          <p>
+            Look for files named
+            <strong>Streaming_History_Audio_… .json</strong> inside the ZIP.
+            Upload the ZIP itself for the easiest option, or select every
+            matching audio-history JSON file if you extracted it. The tracker
+            uses the timestamps and milliseconds-played values in those
+            records to calculate listening time.
+          </p>
+          <p>
+            Spotify's official explanation:
+            <a href="https://support.spotify.com/us/article/understanding-your-data/" target="_blank"
+              rel="noopener noreferrer">Understanding your data</a>.
+          </p>
+        </div>
+      </div>
+
+      <div class="results" id="results" data-view="overview">
+        <div class="results-tabs" id="resultsTabs" style="display: none">
+          <button class="results-tab active" data-view="overview">
+            Overview
+          </button>
+          <button class="results-tab" data-view="patterns">
+            Listening Patterns</button><button class="results-tab" data-view="taste">
+            Taste Timeline</button><button class="results-tab" data-view="compare">Compare</button><button
+            class="results-tab" data-view="records">Records</button>
+        </div>
+
+        <div class="view-panel" id="tastePanel">
+          <p class="pattern-intro">
+            Based on the date range selected on the left. Discovery dates use
+            your whole history, so your first month contains the library you
+            started with.
+          </p>
+          <div class="pattern-section">
+            <h3>Artist dominance</h3>
+            <div id="domBox"></div>
+          </div>
+          <div class="pattern-section">
+            <h3>Top artist by year</h3>
+            <div class="pattern-list" id="yearArtistBox"></div>
+          </div>
+          <div class="pattern-section">
+            <h3>Artist discovery timeline</h3>
+            <div class="disc-scroll" id="discBox"></div>
+          </div>
+        </div>
+        <div class="view-panel" id="comparePanel">
+          <p class="pattern-intro">
+            Compare two calendar years or any two custom date ranges. Percent
+            change shows Period B relative to Period A.
+          </p>
+          <div class="cmp-controls">
+            <div>
+              <label>Period A</label><select id="cmpYearA"></select>
+              <div class="date-row">
+                <input type="date" id="cmpAFrom" /><span class="date-sep">–</span><input type="date" id="cmpATo" />
+              </div>
+            </div>
+            <div>
+              <label>Period B</label><select id="cmpYearB"></select>
+              <div class="date-row">
+                <input type="date" id="cmpBFrom" /><span class="date-sep">–</span><input type="date" id="cmpBTo" />
+              </div>
+            </div>
+          </div>
+          <button class="apply-btn" id="cmpBtn">Compare</button>
+          <div id="cmpOut"></div>
+        </div>
+        <div class="view-panel" id="recordsPanel">
+          <p class="pattern-intro">
+            All-time records across your whole export (ignores the date
+            range). A "play" here means 30 seconds or more.
+          </p>
+          <div class="pattern-highlights" id="recordsBox"></div>
+        </div>
+        <div class="patterns-panel" id="patternsPanel">
+          <p class="pattern-intro">
+            Your busiest listening periods inside the selected date range.
+            Change the date range on the left to recalculate these stats.
+          </p>
+          <div class="pattern-highlights" id="patternHighlights" style="margin-bottom: 20px"></div>
+          <div class="pattern-highlights" id="streakBox"></div>
+          <div class="pattern-section">
+            <h3>Listening heat map</h3>
+            <div id="heatBox"></div>
+          </div>
+          <div class="pattern-section">
+            <h3>Top months</h3>
+            <div class="pattern-list" id="monthBreakdown"></div>
+          </div>
+          <div class="pattern-section">
+            <h3>Top days</h3>
+            <div class="pattern-list" id="dayBreakdown"></div>
+          </div>
+          <div class="pattern-section">
+            <h3>Top weeks</h3>
+            <div class="pattern-list" id="weekBreakdown"></div>
+          </div>
+        </div>
+
+        <div class="results-tabs" id="topNTabs" data-view-section="overview" style="display: none">
+          <button class="topn-btn active" data-n="10">Top 10</button><button class="topn-btn" data-n="25">Top
+            25</button><button class="topn-btn" data-n="50">Top 50</button>
+        </div>
+        <div class="section-title" id="artistsTitle" data-view-section="overview">
+          Top Artists
+        </div>
+
+        <div class="grid" id="artistsList" data-view-section="overview"></div>
+
+        <div class="section-title" id="tracksTitle" data-view-section="overview">
+          Top Tracks
+        </div>
+
+        <div class="grid" id="tracksList" data-view-section="overview"></div>
+
+        <div class="section-title" id="yearsTitle" data-view-section="overview">
+          By Year
+        </div>
+
+        <div class="years" id="yearsList" data-view-section="overview"></div>
+
+        <div class="grid" id="liveList" data-view-section="overview"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./assets/script.js">
+
+  </script>
+
+  <script type="module"
+    src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092"
+    integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw=="
+    data-cf-beacon='{"version":"2024.11.0","token":"f94b97a9d57743d0b953bdc73e25ffe8","r":1,"spa":2}'
+    crossorigin="anonymous"></script>
+</body>
+
+</html>
